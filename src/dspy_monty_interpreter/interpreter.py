@@ -64,7 +64,7 @@ class MontyInterpreter:
     ) -> None:
         self._tools: dict[str, Callable[..., str]] = dict(tools) if tools else {}
         self.output_fields: list[dict] | None = output_fields
-        self._tools_registered: bool = False
+        self.__tools_registered: bool = False
         self._resource_limits: ResourceLimits | None = resource_limits
         self._code_history: list[str] = []
         self._call_cache: list[_CachedCall] = []
@@ -75,6 +75,25 @@ class MontyInterpreter:
     @property
     def tools(self) -> dict[str, Callable[..., str]]:
         return self._tools
+
+    # RLM sets ``_tools_registered = False`` via _inject_execution_context at
+    # the start of every forward() call.  We intercept that write so we can
+    # automatically clear accumulated Monty state between RLM runs.
+    @property  # type: ignore[override]
+    def _tools_registered(self) -> bool:
+        return self.__tools_registered
+
+    @_tools_registered.setter
+    def _tools_registered(self, value: bool) -> None:
+        # Reset state when RLM signals a new forward() call.  RLM always
+        # sets _tools_registered = False at the start of each run.  We only
+        # reset when there is accumulated state to clear (i.e. code has been
+        # executed since the last reset).
+        if not value and self._code_history:
+            self._code_history.clear()
+            self._call_cache.clear()
+            self._ext_fn_history.clear()
+        self.__tools_registered = value
 
     def start(self) -> None:
         pass
@@ -236,7 +255,7 @@ class MontyInterpreter:
         self._code_history.clear()
         self._call_cache.clear()
         self._ext_fn_history.clear()
-        self._tools_registered = False
+        self.__tools_registered = False
 
     def __enter__(self) -> MontyInterpreter:
         self.start()

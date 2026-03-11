@@ -278,6 +278,32 @@ def test_tools_registered_settable():
     assert interp._tools_registered is False
 
 
+def test_tools_registered_reset_clears_state():
+    """Setting _tools_registered = False (as RLM does between forward()
+    calls) should clear accumulated interpreter state."""
+    interp = MontyInterpreter()
+    interp.execute("x = 42")
+
+    # Simulate what RLM does at the start of each forward() call
+    interp._tools_registered = False  # triggers reset (code_history is non-empty)
+
+    with pytest.raises(CodeInterpreterError):
+        interp.execute("x")  # x should no longer exist
+
+
+def test_tools_registered_no_reset_when_clean():
+    """Setting _tools_registered = False on a fresh interpreter should NOT
+    clear state — there's nothing to clear."""
+    interp = MontyInterpreter()
+
+    # No code has been executed, so this is a no-op
+    interp._tools_registered = False
+
+    # Interpreter should still work normally
+    result = interp.execute("1 + 1")
+    assert result == "2"
+
+
 # --- Lifecycle ---
 
 
