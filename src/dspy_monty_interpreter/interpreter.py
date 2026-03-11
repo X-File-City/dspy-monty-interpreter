@@ -3,22 +3,31 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Literal
 
 from dspy.primitives.code_interpreter import CodeInterpreterError, FinalOutput
 from pydantic_monty import (
+    FunctionSnapshot,
+    FutureSnapshot,
     Monty,
     MontyComplete,
-    MontyFutureSnapshot,
     MontyRuntimeError,
-    MontySnapshot,
     MontySyntaxError,
+    NameLookupSnapshot,
     ResourceLimits,
 )
 
 # Sentinel external function name used to separate replayed code from new code.
 _BOUNDARY = "__mci_boundary__"
+
+
+def _submit_placeholder(*args: Any, **kwargs: Any) -> None:
+    """Placeholder provided to the VM for SUBMIT name lookups."""
+
+
+def _boundary_placeholder() -> None:
+    """Placeholder provided to the VM for boundary name lookups."""
 
 # Matches markdown code fences wrapping the entire code string.
 _CODE_FENCE_RE = re.compile(
@@ -68,9 +77,6 @@ class MontyInterpreter:
         self._resource_limits: ResourceLimits | None = resource_limits
         self._code_history: list[str] = []
         self._call_cache: list[_CachedCall] = []
-        # Track all external function names ever used in accumulated code,
-        # so Monty always recognizes them even if tools change between calls.
-        self._ext_fn_history: set[str] = set()
 
     @property
     def tools(self) -> dict[str, Callable[..., str]]:
@@ -92,7 +98,6 @@ class MontyInterpreter:
         if not value and self._code_history:
             self._code_history.clear()
             self._call_cache.clear()
-            self._ext_fn_history.clear()
         self.__tools_registered = value
 
     def start(self) -> None:
@@ -127,23 +132,14 @@ class MontyInterpreter:
         else:
             full_code = code
 
-        # Determine input and external function names.
-        # Include current tools, historical tools (from accumulated code),
-        # and SUBMIT. This ensures Monty recognizes all function names that
-        # appear anywhere in the accumulated + new code.
+        # Determine input names.
         input_names = list(variables.keys()) if variables else None
-        ext_fn_names = list(
-            {*self._tools.keys(), *self._ext_fn_history, "SUBMIT"}
-        )
-        if has_history:
-            ext_fn_names.append(_BOUNDARY)
 
-        # Parse code
+        # Parse code (v0.0.8+: external functions are auto-detected)
         try:
             m = Monty(
                 full_code,
                 inputs=input_names,
-                external_functions=ext_fn_names,
             )
         except MontySyntaxError as e:
             raise SyntaxError(str(e)) from e
@@ -181,12 +177,24 @@ class MontyInterpreter:
                     # Execution finished — commit history and return
                     self._code_history.append(code)
                     self._call_cache.extend(new_calls)
-                    self._ext_fn_history.update(
-                        c.func_name for c in new_calls
-                    )
                     return _build_output(progress.output, new_print_output)
 
-                if isinstance(progress, MontySnapshot):
+                if isinstance(progress, NameLookupSnapshot):
+                    # v0.0.8+: VM pauses on unknown names. Provide the
+                    # tool function if we have it, otherwise let the VM
+                    # raise NameError.
+                    name = progress.variable_name
+                    if name in self._tools:
+                        progress = progress.resume(value=self._tools[name])
+                    elif name == "SUBMIT":
+                        progress = progress.resume(value=_submit_placeholder)
+                    elif name == _BOUNDARY:
+                        progress = progress.resume(value=_boundary_placeholder)
+                    else:
+                        progress = progress.resume()  # raises NameError in VM
+                    continue
+
+                if isinstance(progress, FunctionSnapshot):
                     fn_name = progress.function_name
 
                     # Boundary marker: switch from replay to live
@@ -218,9 +226,6 @@ class MontyInterpreter:
                         )
                         self._code_history.append(code)
                         self._call_cache.extend(new_calls)
-                        self._ext_fn_history.update(
-                            c.func_name for c in new_calls
-                        )
                         return _handle_submit(
                             progress.args, progress.kwargs, self.output_fields
                         )
@@ -238,7 +243,7 @@ class MontyInterpreter:
                     progress = progress.resume(exception=exc)
                     continue
 
-                if isinstance(progress, MontyFutureSnapshot):
+                if isinstance(progress, FutureSnapshot):
                     raise CodeInterpreterError(
                         "Async execution is not supported by MontyInterpreter."
                     )
@@ -254,7 +259,6 @@ class MontyInterpreter:
     def shutdown(self) -> None:
         self._code_history.clear()
         self._call_cache.clear()
-        self._ext_fn_history.clear()
         self.__tools_registered = False
 
     def __enter__(self) -> MontyInterpreter:
@@ -284,10 +288,10 @@ def _handle_submit(
 
 
 def _call_tool(
-    snapshot: MontySnapshot,
+    snapshot: FunctionSnapshot,
     fn_name: str,
     tool_fn: Callable[..., str],
-) -> tuple[MontySnapshot | MontyFutureSnapshot | MontyComplete, _CachedCall]:
+) -> tuple[FunctionSnapshot | FutureSnapshot | MontyComplete, _CachedCall]:
     """Call a host-side tool and resume execution."""
     try:
         result = tool_fn(*snapshot.args, **snapshot.kwargs)

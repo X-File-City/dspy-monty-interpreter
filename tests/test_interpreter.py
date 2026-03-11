@@ -392,8 +392,8 @@ def test_state_persists_across_submit_boundaries():
     assert result == "3"
 
 
-def test_ext_fn_history_survives_tool_changes():
-    """External function names from old code stay registered even if tools change."""
+def test_tool_changes_between_calls():
+    """Accumulated code still works when tools dict is replaced between calls."""
     def tool_v1(x: str) -> str:
         return "v1"
 
@@ -408,8 +408,8 @@ def test_ext_fn_history_survives_tool_changes():
     interp._tools["my_tool"] = tool_v2
     interp._tools["new_tool"] = lambda: "new"
 
-    # Old code references my_tool — should still be recognized by Monty
-    # even though tools dict was cleared and rebuilt
+    # Old code references my_tool — v0.0.8+ auto-detects external
+    # functions so this should still work
     result = interp.execute("print(a)")
     assert result == "v1"
 
