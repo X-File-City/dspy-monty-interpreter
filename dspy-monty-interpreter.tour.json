@@ -1,0 +1,187 @@
+{
+  "id": "dspy-monty-interpreter-onboarding",
+  "title": "DSPy Monty Interpreter Tour",
+  "description": "Explore the architecture of a secure, microsecond-startup DSPy CodeInterpreter backed by a Rust-based Python VM",
+  "version": "1.0.0",
+  "audience": "New Contributors & AI Assistants",
+  "prerequisites": ["Basic Python knowledge", "Familiarity with DSPy concepts"],
+  "steps": [
+    {
+      "id": "step-1-overview",
+      "title": "Project Overview",
+      "description": "Welcome to dspy-monty-interpreter! This package provides a DSPy CodeInterpreter implementation backed by Monty, a secure Python interpreter written in Rust. It delivers microsecond startup times, sandboxed execution (no filesystem/network access), and state persistence across calls — all without subprocess or WASM overhead.",
+      "estimatedTime": 60,
+      "colorMode": "fileTypes",
+      "interactiveActions": [
+        {
+          "type": "explore",
+          "description": "Look around the project — it's intentionally compact with a clean separation of source, tests, and benchmarks"
+        }
+      ]
+    },
+    {
+      "id": "step-2-core-interpreter",
+      "title": "Core Implementation",
+      "description": "The entire interpreter lives in a single module. interpreter.py contains the MontyInterpreter class (~325 lines) which implements DSPy's CodeInterpreter protocol. The __init__.py re-exports MontyInterpreter as the public API. The key design: code is accumulated across execute() calls, replayed with cached tool results, and only new output is returned.",
+      "estimatedTime": 120,
+      "focusDirectory": "src",
+      "highlightLayers": [
+        {
+          "id": "interpreter-core",
+          "name": "Interpreter Module",
+          "color": "#3b82f6",
+          "items": [
+            { "path": "src/dspy_monty_interpreter/interpreter.py", "type": "file" }
+          ],
+          "opacity": 0.8,
+          "renderStrategy": "fill"
+        },
+        {
+          "id": "public-api",
+          "name": "Public API",
+          "color": "#10b981",
+          "items": [
+            { "path": "src/dspy_monty_interpreter/__init__.py", "type": "file" }
+          ],
+          "opacity": 0.7,
+          "renderStrategy": "border"
+        }
+      ],
+      "colorMode": "fileTypes",
+      "interactiveActions": [
+        {
+          "type": "click-file",
+          "description": "Click interpreter.py to see the MontyInterpreter class — the execute() method is the heart of the system",
+          "target": "src/dspy_monty_interpreter/interpreter.py"
+        }
+      ]
+    },
+    {
+      "id": "step-3-state-and-tools",
+      "title": "State Accumulation & Tool Dispatch",
+      "description": "MontyInterpreter's defining pattern is state accumulation with replay. Each successful execute() call appends code to _code_history. On the next call, all prior code is replayed with a boundary marker separating old from new. Tool calls (registered via the tools dict) pause the Rust VM, invoke host-side Python functions, and cache results so replays never re-trigger side effects. The SUBMIT() built-in returns FinalOutput to signal completion to the RLM.",
+      "estimatedTime": 120,
+      "focusDirectory": "src/dspy_monty_interpreter",
+      "highlightLayers": [
+        {
+          "id": "execution-engine",
+          "name": "Execution & State Engine",
+          "color": "#f59e0b",
+          "items": [
+            { "path": "src/dspy_monty_interpreter/interpreter.py", "type": "file" }
+          ],
+          "opacity": 0.7,
+          "renderStrategy": "fill"
+        }
+      ],
+      "colorMode": "fileTypes"
+    },
+    {
+      "id": "step-4-tests",
+      "title": "Test Suite",
+      "description": "The test suite in test_interpreter.py (~443 lines) provides comprehensive coverage: protocol conformance, state persistence across calls, SUBMIT handling (kwargs, positional args, output_fields), tool dispatch and caching, print suppression during replay, error mapping and recovery, RLM compatibility (the _tools_registered property), and context manager lifecycle. Every architectural invariant has a corresponding test.",
+      "estimatedTime": 90,
+      "focusDirectory": "tests",
+      "highlightLayers": [
+        {
+          "id": "test-suite",
+          "name": "Test Suite",
+          "color": "#8b5cf6",
+          "items": [
+            { "path": "tests/test_interpreter.py", "type": "file" }
+          ],
+          "opacity": 0.8,
+          "renderStrategy": "fill"
+        }
+      ],
+      "colorMode": "fileTypes",
+      "interactiveActions": [
+        {
+          "type": "click-file",
+          "description": "Click test_interpreter.py to see how the replay, caching, and tool dispatch behaviors are validated",
+          "target": "tests/test_interpreter.py"
+        }
+      ]
+    },
+    {
+      "id": "step-5-benchmarks",
+      "title": "Performance Benchmarks",
+      "description": "bench.py (~591 lines) compares MontyInterpreter against DSPy's built-in PythonInterpreter across arithmetic, string ops, recursion, sorting, state accumulation, tool calls, and SUBMIT workflows. It measures startup time, per-task execution, and shutdown, supporting multiple runs with median aggregation and JSON output for automation. This is where the microsecond startup advantage is quantified.",
+      "estimatedTime": 60,
+      "focusDirectory": "benchmarks",
+      "highlightLayers": [
+        {
+          "id": "bench-suite",
+          "name": "Benchmark Suite",
+          "color": "#ef4444",
+          "items": [
+            { "path": "benchmarks/bench.py", "type": "file" }
+          ],
+          "opacity": 0.8,
+          "renderStrategy": "fill"
+        }
+      ],
+      "colorMode": "fileTypes",
+      "interactiveActions": [
+        {
+          "type": "click-file",
+          "description": "Click bench.py to see the performance comparison methodology",
+          "target": "benchmarks/bench.py"
+        }
+      ]
+    },
+    {
+      "id": "step-6-config-and-packaging",
+      "title": "Configuration & Packaging",
+      "description": "pyproject.toml defines the package metadata, dependencies (dspy >= 3.0, pydantic-monty >= 0.0.8), and build system (hatchling). The .github/monty-version.txt tracks the known compatible Monty VM version. Built distributions (wheel and tarball) live in dist/. The package supports Python 3.10–3.13 and is published under the MIT license.",
+      "estimatedTime": 60,
+      "focusDirectory": "",
+      "highlightLayers": [
+        {
+          "id": "config-files",
+          "name": "Configuration",
+          "color": "#06b6d4",
+          "items": [
+            { "path": "pyproject.toml", "type": "file" },
+            { "path": "LICENSE", "type": "file" }
+          ],
+          "opacity": 0.7,
+          "renderStrategy": "fill"
+        },
+        {
+          "id": "build-artifacts",
+          "name": "Build Artifacts",
+          "color": "#f97316",
+          "items": [
+            { "path": "dist", "type": "directory" }
+          ],
+          "opacity": 0.5,
+          "renderStrategy": "border"
+        },
+        {
+          "id": "version-tracking",
+          "name": "Version Tracking",
+          "color": "#a855f7",
+          "items": [
+            { "path": ".github", "type": "directory" }
+          ],
+          "opacity": 0.5,
+          "renderStrategy": "border"
+        }
+      ],
+      "colorMode": "fileTypes",
+      "interactiveActions": [
+        {
+          "type": "click-file",
+          "description": "Click pyproject.toml to see dependencies and package configuration",
+          "target": "pyproject.toml"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "author": "File City Tours",
+    "createdAt": "2026-03-12",
+    "tags": ["onboarding", "dspy", "interpreter", "rust", "security"]
+  }
+}
