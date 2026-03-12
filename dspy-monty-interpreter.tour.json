@@ -22,7 +22,7 @@
     {
       "id": "step-2-core-interpreter",
       "title": "Core Implementation",
-      "description": "The entire interpreter lives in a single module. interpreter.py contains the MontyInterpreter class (~325 lines) which implements DSPy's CodeInterpreter protocol. The __init__.py re-exports MontyInterpreter as the public API. The key design: code is accumulated across execute() calls, replayed with cached tool results, and only new output is returned.",
+      "description": "The entire interpreter lives in a single module. interpreter.py contains the MontyInterpreter class (325 lines) which implements DSPy's CodeInterpreter protocol. The __init__.py re-exports MontyInterpreter as the public API. The key design: code is accumulated across execute calls, replayed with cached tool results, and only new output is returned.",
       "estimatedTime": 120,
       "focusDirectory": "src",
       "highlightLayers": [
@@ -79,7 +79,7 @@
     {
       "id": "step-4-tests",
       "title": "Test Suite",
-      "description": "The test suite in test_interpreter.py (~443 lines) provides comprehensive coverage: protocol conformance, state persistence across calls, SUBMIT handling (kwargs, positional args, output_fields), tool dispatch and caching, print suppression during replay, error mapping and recovery, RLM compatibility (the _tools_registered property), and context manager lifecycle. Every architectural invariant has a corresponding test.",
+      "description": "The test suite in test_interpreter.py (443 lines) provides comprehensive coverage: protocol conformance, state persistence across calls, SUBMIT handling (kwargs, positional args, output_fields), tool dispatch and caching, print suppression during replay, error mapping and recovery, RLM compatibility (the _tools_registered property), and context manager lifecycle. Every architectural invariant has a corresponding test.",
       "estimatedTime": 90,
       "focusDirectory": "tests",
       "highlightLayers": [
@@ -106,7 +106,7 @@
     {
       "id": "step-5-benchmarks",
       "title": "Performance Benchmarks",
-      "description": "bench.py (~591 lines) compares MontyInterpreter against DSPy's built-in PythonInterpreter across arithmetic, string ops, recursion, sorting, state accumulation, tool calls, and SUBMIT workflows. It measures startup time, per-task execution, and shutdown, supporting multiple runs with median aggregation and JSON output for automation. This is where the microsecond startup advantage is quantified.",
+      "description": "bench.py (591 lines) compares MontyInterpreter against DSPy's built-in PythonInterpreter across arithmetic, string ops, recursion, sorting, state accumulation, tool calls, and SUBMIT workflows. It measures startup time, per-task execution, and shutdown, supporting multiple runs with median aggregation and JSON output for automation. This is where the microsecond startup advantage is quantified.",
       "estimatedTime": 60,
       "focusDirectory": "benchmarks",
       "highlightLayers": [
