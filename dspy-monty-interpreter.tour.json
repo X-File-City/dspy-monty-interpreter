@@ -79,7 +79,7 @@
     {
       "id": "step-4-tests",
       "title": "Test Suite",
-      "description": "test_interpreter.py provides comprehensive coverage of every architectural invariant: protocol conformance, state persistence, SUBMIT handling, tool dispatch and caching, print suppression during replay, error recovery, and RLM compatibility.",
+      "description": "The test suite provides comprehensive coverage of every architectural invariant: protocol conformance, state persistence, SUBMIT handling, tool dispatch and caching, print suppression during replay, error recovery, and RLM compatibility.",
       "estimatedTime": 90,
       "focusDirectory": "tests",
       "highlightLayers": [
@@ -106,7 +106,7 @@
     {
       "id": "step-5-benchmarks",
       "title": "Performance Benchmarks",
-      "description": "bench.py (591 lines) compares MontyInterpreter against DSPy's built-in PythonInterpreter across arithmetic, string ops, recursion, sorting, state accumulation, tool calls, and SUBMIT workflows. It measures startup time, per-task execution, and shutdown, supporting multiple runs with median aggregation and JSON output for automation. This is where the microsecond startup advantage is quantified.",
+      "description": "bench.py compares MontyInterpreter against DSPy's built-in PythonInterpreter across arithmetic, string ops, recursion, sorting, state accumulation, tool calls, and SUBMIT workflows. It measures startup time, per-task execution, and shutdown, supporting multiple runs with median aggregation and JSON output for automation. This is where the microsecond startup advantage is quantified.",
       "estimatedTime": 60,
       "focusDirectory": "benchmarks",
       "highlightLayers": [
