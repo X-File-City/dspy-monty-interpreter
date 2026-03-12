@@ -59,7 +59,7 @@
     {
       "id": "step-3-state-and-tools",
       "title": "State Accumulation & Tool Dispatch",
-      "description": "MontyInterpreter's defining pattern is state accumulation with replay. Each successful execute call appends code to _code_history. On the next call, all prior code is replayed with a boundary marker separating old from new. Tool calls (registered via the tools dict) pause the Rust VM, invoke host-side Python functions, and cache results so replays never re-trigger side effects. The SUBMIT built-in returns FinalOutput to signal completion to the RLM.",
+      "description": "MontyInterpreter's defining pattern is state accumulation with replay. Each successful execute call appends code to the history. On the next call, all prior code is replayed with a boundary marker separating old from new. Tool calls (registered via the tools dict) pause the Rust VM, invoke host-side Python functions, and cache results so replays never re-trigger side effects. The SUBMIT built-in returns FinalOutput to signal completion to the RLM.",
       "estimatedTime": 120,
       "focusDirectory": "src/dspy_monty_interpreter",
       "highlightLayers": [
